@@ -10,6 +10,7 @@ import { throttledWait, recordFailure, resetThrottle } from "@/lib/throttle";
 import { writeAuditLog } from "@/lib/audit";
 import { isAdminIdentity } from "@/lib/admin-policy";
 import { REQUIRE_MFA, verifyTurnstile } from "@/lib/turnstile";
+import { logLoginFailure, logSupabaseEnvOnce } from "@/lib/auth-diagnostics";
 
 const GENERIC_ERROR = "Invalid email or password";
 const RESET_SENT = "If that account exists, a reset link has been sent.";
@@ -52,6 +53,9 @@ async function fail(ip: string, email: string, supabase: ReturnType<typeof creat
 }
 
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  // One boolean-only env line per process (first request to reach login).
+  logSupabaseEnvOnce();
+
   if (!hasSupabaseEnv) return { error: getMissingEnvError() };
 
   const parsed = loginSchema.safeParse({
@@ -75,9 +79,30 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   const supabase = createClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: parsed.data.password });
 
-  if (error || !data.user || !isAdminIdentity(data.user.app_metadata)) {
+  let signInError: unknown = null;
+  let hasUser = false;
+  let appMetadata: Record<string, unknown> | null = null;
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: parsed.data.password,
+    });
+    signInError = error ?? null;
+    hasUser = Boolean(data?.user);
+    appMetadata = (data?.user?.app_metadata ?? null) as Record<string, unknown> | null;
+  } catch (e) {
+    // A transport/config throw used to escape the action; it now takes the
+    // same generic path as every other failure (no enumeration signal).
+    signInError = e ?? new Error("signInWithPassword threw");
+  }
+
+  const notAdmin = !signInError && hasUser && !isAdminIdentity(appMetadata);
+
+  if (signInError || !hasUser || notAdmin) {
+    // ONE structured server line: event, status, code, name, category, ts.
+    // No email, password, token, key, IP, cookie and never `error.message`.
+    logLoginFailure({ error: signInError, notAdmin });
     return fail(ip, email, supabase);
   }
 
