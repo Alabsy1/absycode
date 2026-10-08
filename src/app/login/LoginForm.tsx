@@ -11,7 +11,10 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={pending} className="btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60">
-      {pending ? pendingLabel : label}
+      {/* React-toggled text lives in its own element: a bare text node that a
+          translator rewrites in place would otherwise be the node React tries
+          to remove on the pending/label swap. */}
+      <span>{pending ? pendingLabel : label}</span>
     </button>
   );
 }

@@ -16,7 +16,10 @@ export default function LoginPage({ searchParams }: { searchParams: { next?: str
   const next = safeNext(searchParams.next, "/admin");
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#FAF3EC] px-5 py-16">
-      <div className="w-full max-w-md">
+      {/* translate="no": Google/Edge translate rewrites text nodes in place; this
+          container is the login form, so keep reconciliation and the error copy
+          under React's control instead of a machine-translated tree. */}
+      <div className="w-full max-w-md" translate="no">
         <div className="flex flex-col items-center text-center">
           <Logo className="h-10 w-10" />
           <p className="eyebrow mt-4">— AbsyCode admin</p>

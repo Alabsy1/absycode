@@ -33,10 +33,11 @@ begin
      limit 1;
 
     if target_id is null then
+      -- RAISE takes one plain string literal (the message) then optional
+      -- format args; concatenating with || is a syntax error, so the whole
+      -- sentence must be a single literal containing the % placeholder.
       raise exception
-        'MAKE-ADMIN STOPPED: no auth.users row for "%" (checked case-insensitively). '
-        || 'Create it first: Authentication > Users > Add user, "Auto Confirm User" checked. '
-        || 'Nothing was changed - create the user, then run this file again.',
+        'MAKE-ADMIN STOPPED: no auth.users row for "%" (checked case-insensitively). Create it first: Authentication > Users > Add user, "Auto Confirm User" checked. Nothing was changed - create the user, then run this file again.',
         target_email;
     end if;
 
