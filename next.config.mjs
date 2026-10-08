@@ -10,11 +10,15 @@ const FRAMEABLE_PROJECT_DOMAINS = [
   "https://absy-3d-portfolio.vercel.app",
 ];
 
+const isDev = process.env.NODE_ENV !== "production";
+
 const baseCsp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  // Next 14 inlines scripts/styles at runtime and ships no nonce support,
-  // so a minimal 'unsafe-inline' is required. Revisit on Next 15+.
+  // Next 14's dev runtime (react-refresh) evaluates strings, and its inline
+  // scripts/styles ship no nonce support. Production never uses eval, so
+  // 'unsafe-eval' is granted in development only — without it `next dev`
+  // throws before React mounts and the page is left un-hydrated.
+  isDev ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",

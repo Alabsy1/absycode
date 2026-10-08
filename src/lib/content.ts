@@ -13,15 +13,16 @@ import {
   siteSchema,
   statsListSchema,
   testimonialListSchema,
+  validPart,
 } from "@/lib/validate";
-import { safeParse } from "@/lib/validate";
 
 /* =====================================================================
    Content merge layer.
 
    site.ts is the baseline/fallback. Rows in `site_settings` override it.
    - The public site renders from defaults when the DB is empty/unreachable.
-   - Only rows that pass their zod schema are applied — junk never ships.
+   - Only fields that pass their zod schema are applied — junk never ships, and
+     a bad or empty field falls back to its site.ts default (per-field merge).
    - consumer pages render from a tag-cached copy of the merged config;
      admin saves revalidateTag("content") to publish edits instantly.
    ===================================================================== */
@@ -41,6 +42,11 @@ const SCHEMAS: Record<string, ZodType> = {
   estimator: estimatorSchema,
 };
 
+/**
+ * Per-field merge: `validPart` keeps only the fields that pass their schema
+ * and `mergeDeep` drops empty values, so a partial or junk DB row can only
+ * ever improve on the site.ts defaults — never blank them out.
+ */
 function buildMerged(rows: Row[]): SiteConfig {
   let cfg: SiteConfig = structuredClone(site);
   for (const row of rows) {
@@ -48,8 +54,8 @@ function buildMerged(rows: Row[]): SiteConfig {
     if (!EDITABLE.has(key)) continue;
     const schema = SCHEMAS[key];
     if (!schema) continue;
-    const value = safeParse(schema, row.value);
-    if (value !== null) cfg = mergeDeep(cfg, value);
+    const value = validPart(schema, row.value);
+    if (value !== undefined && value !== null) cfg = mergeDeep(cfg, value);
   }
   return cfg;
 }

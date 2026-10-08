@@ -160,3 +160,32 @@ export function safeParse<T>(schema: z.ZodType<T>, value: unknown): T | null {
 export function isValid<T>(schema: z.ZodType<T>, value: unknown): value is T {
   return schema.safeParse(value).success;
 }
+
+/**
+ * Returns only the parts of `value` that pass `schema`, field by field.
+ *
+ * A single invalid field must never throw away the whole row: the bad field is
+ * dropped (so it keeps its site.ts default) while the good ones still apply.
+ * Returns undefined when nothing is usable, or when the schema is a leaf,
+ * array or record — those stay all-or-nothing.
+ */
+export function validPart(schema: z.ZodType, value: unknown): unknown {
+  const res = schema.safeParse(value);
+  if (res.success) return res.data;
+
+  const shape = (schema as { shape?: Record<string, z.ZodType> }).shape;
+  if (!shape || typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+
+  const out: Record<string, unknown> = {};
+  let any = false;
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    const field = shape[k];
+    if (!field) continue;
+    const parsed = validPart(field, v);
+    if (parsed !== undefined) {
+      out[k] = parsed;
+      any = true;
+    }
+  }
+  return any ? out : undefined;
+}

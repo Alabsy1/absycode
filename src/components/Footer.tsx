@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { SiteConfig } from "@/config/site";
 import { t, type Locale } from "@/i18n";
-import Logo from "./Logo";
+import CurrentYear from "./CurrentYear";
 import DashboardLink from "./DashboardLink";
+import ErrorBoundary from "./ErrorBoundary";
+import Logo from "./Logo";
 
 function contactHref(key: string, c: SiteConfig["contact"]): string | null {
   if (key === "instagram") return c.instagram;
@@ -73,9 +75,14 @@ export default function Footer({ locale, content }: { locale: Locale; content: S
 
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-5 py-4 text-xs text-[#FAF3EC]/60 sm:px-8 lg:px-10">
-          <span>© {new Date().getFullYear()} AbsyCode</span>
+          <span>© <CurrentYear serverYear={new Date().getFullYear()} /> AbsyCode</span>
           <div className="flex items-center gap-4">
-            <DashboardLink locale={locale} />
+            <ErrorBoundary name="admin-link" fallback={null}>
+              <DashboardLink locale={locale} />
+            </ErrorBoundary>
+            <Link href="/login" className="text-[#FAF3EC]/60 no-underline hover:text-[#B5622F]">
+              {t(content.ui.login, locale)}
+            </Link>
             <Link href={locale === "en" ? "/ar" : "/en"} className="text-[#FAF3EC]/60 no-underline hover:text-[#B5622F]">
               {locale === "en" ? "العربية" : "English"}
             </Link>

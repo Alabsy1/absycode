@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "db:seed": "tsx scripts/seed.ts"
+    "test:e2e": "playwright test",
+    "db:seed": "tsx scripts/seed.ts",
+    "check:supabase": "tsx scripts/check-supabase.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.3",
@@ -24,6 +26,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.2",
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",

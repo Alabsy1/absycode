@@ -1,3 +1,26 @@
 node_modules
 .next
 out
+
+# local environment files - never commit secrets
+.env*
+!.env.example
+
+# personal admin bootstrap - contains real email addresses
+supabase/*.local.sql
+supabase/make-admin.local.sql
+
+# secrets / keys
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+
+# test / tooling output
+/debug/
+/test-results/
+/playwright-report/
+/blob-report/
+*.tsbuildinfo

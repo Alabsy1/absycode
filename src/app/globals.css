@@ -152,3 +152,20 @@
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Progressive entrance animation (Reveal). The hiding state only exists for
+   users who have NOT asked for reduced motion, so content is never hidden by
+   a preference, by missing JS, or by a failed hydration. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-hidden {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  .reveal-shown {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+  }
+}

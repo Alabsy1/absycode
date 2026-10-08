@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, lazy, useEffect, useState } from "react";
+import ErrorBoundary from "./ErrorBoundary";
 
 const LazyCanvas = lazy(() => import("./WireframeCanvas"));
 
@@ -28,19 +29,33 @@ export function WireframeFallback({ className = "" }: { className?: string }) {
   );
 }
 
+function canUseWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
+  } catch {
+    return false;
+  }
+}
+
 export default function Wireframe({ variant = "sphere", className = "" }: { variant?: "sphere" | "cube"; className?: string }) {
-  const [enabled, setEnabled] = useState(false);
+  const [attempt3d, setAttempt3d] = useState(false);
+
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mem = (navigator as unknown as { deviceMemory?: number }).deviceMemory;
-    const lowMem = mem !== undefined && mem < 4;
-    const saveData = (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData === true;
-    if (!reduced && !lowMem && !saveData) setEnabled(true);
+    // Attempt WebGL unless the visitor explicitly asked for reduced motion.
+    // The SVG below is only a fallback: no WebGL, or a canvas that throws.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!canUseWebGL()) return;
+    setAttempt3d(true);
   }, []);
-  if (!enabled) return <WireframeFallback className={className} />;
+
+  if (!attempt3d) return <WireframeFallback className={className} />;
+
   return (
-    <Suspense fallback={<WireframeFallback className={className} />}>
-      <LazyCanvas variant={variant} className={className} />
-    </Suspense>
+    <ErrorBoundary name="hero-3d" fallback={<WireframeFallback className={className} />}>
+      <Suspense fallback={<WireframeFallback className={className} />}>
+        <LazyCanvas variant={variant} className={className} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

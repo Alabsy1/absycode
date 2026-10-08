@@ -1,6 +1,6 @@
 "use client";
-import { motion } from "framer-motion";
 import type { Locale } from "@/i18n";
+import ErrorBoundary from "./ErrorBoundary";
 
 const milestones = [
   { en: "Design approved", ar: "التصميم معتمد", done: true, pct: 100 },
@@ -34,12 +34,17 @@ export default function PortalPreview({ locale }: { locale: Locale }) {
           {isRtl ? "هكذا يبدو العمل معنا: تقدم واضح وفواتير ورسائل في مكان واحد." : "This is what working with us looks like: clear progress, invoices and messages in one place."}
         </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-8 overflow-hidden rounded-xl border border-[#D9CFC4] bg-[#FAF3EC] shadow-sm"
+        <ErrorBoundary
+          name="portal-preview"
+          fallback={
+            <div className="mt-8 overflow-hidden rounded-xl border border-[#D9CFC4] bg-[#FAF3EC] shadow-sm">
+              <div className="flex items-center gap-2 border-b border-[#D9CFC4] bg-[#ECE3DA] px-4 py-2.5">
+                <span className="min-w-0 truncate font-mono text-[11px] text-[#7A6A5F] ps-2">portal.absycode.com</span>
+              </div>
+            </div>
+          }
         >
+        <div className="mt-8 overflow-hidden rounded-xl border border-[#D9CFC4] bg-[#FAF3EC] shadow-sm">
           <div className="flex items-center gap-2 border-b border-[#D9CFC4] bg-[#ECE3DA] px-4 py-2.5">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#D9CFC4]" aria-hidden="true" />
             <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#D9CFC4]" aria-hidden="true" />
@@ -70,7 +75,7 @@ export default function PortalPreview({ locale }: { locale: Locale }) {
                 <p className="font-mono text-xs text-[#7A6A5F]">{isRtl ? "تقدم المشروع" : "Project progress"}</p>
                 <p className="mt-1 text-3xl font-bold">65%</p>
                 <div className="mt-3 h-2.5 overflow-hidden rounded-full border border-[#D9CFC4] bg-[#FAF3EC]">
-                  <motion.div initial={{ width: 0 }} whileInView={{ width: "65%" }} viewport={{ once: true }} transition={{ duration: 1 }} className="h-full bg-[#382216]" />
+                  <div className="h-full w-[65%] bg-[#382216]" />
                 </div>
                 <ul className="mt-4 space-y-2 text-sm">
                   {milestones.map((m) => (
@@ -109,7 +114,26 @@ export default function PortalPreview({ locale }: { locale: Locale }) {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
+        </ErrorBoundary>
+      </div>
+    </section>
+  );
+}
+
+/** Static heading-only rendering used when the mock window cannot render. */
+export function PortalPreviewFallback({ locale }: { locale: Locale }) {
+  const isRtl = locale === "ar";
+  return (
+    <section className="w-full py-16 md:py-24">
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10">
+        <p className="eyebrow">— {isRtl ? "بوابة العميل" : "Client portal"}</p>
+        <h2 className="mt-2 max-w-2xl text-3xl font-bold tracking-tight md:text-5xl">
+          {isRtl ? "لمحة عن بوابة عميلك" : "A peek at your client portal"}
+        </h2>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#7A6A5F]">
+          {isRtl ? "هكذا يبدو العمل معنا: تقدم واضح وفواتير ورسائل في مكان واحد." : "This is what working with us looks like: clear progress, invoices and messages in one place."}
+        </p>
       </div>
     </section>
   );

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergeDeep } from "../src/lib/merge-deep";
-import { safeParse, siteSchema } from "../src/lib/validate";
+import { safeParse, siteSchema, validPart } from "../src/lib/validate";
 
 describe("content merge: DB overrides defaults, defaults fill gaps", () => {
   const defaults = {
@@ -52,5 +52,57 @@ describe("content safety: junk rows keep defaults", () => {
   it("a corrupted row never passes the schema, so it cannot be merged", () => {
     const corrupted = { ...fullSite, founder: { quote: { en: "a" } } }; // role missing
     expect(safeParse(siteSchema, corrupted)).toBeNull();
+  });
+});
+
+describe("content merge: empty DB values never blank out the site", () => {
+  const defaults = {
+    tagline: { en: "Default en", ar: "Default ar" },
+    stats: [{ value: "10+", label: { en: "sites", ar: "مواقع" } }],
+  };
+
+  it("keeps the default when the patch string is empty or whitespace", () => {
+    expect(mergeDeep(defaults, { tagline: { en: "", ar: "   " } }).tagline).toEqual(defaults.tagline);
+  });
+
+  it("keeps the default when the patch object or array is empty", () => {
+    expect(mergeDeep(defaults, { tagline: {} }).tagline).toEqual(defaults.tagline);
+    expect(mergeDeep(defaults, { stats: [] }).stats).toEqual(defaults.stats);
+  });
+
+  it("still applies the non-empty fields of a mixed patch", () => {
+    expect(mergeDeep(defaults, { tagline: { en: "New en", ar: "" } }).tagline).toEqual({
+      en: "New en",
+      ar: "Default ar",
+    });
+  });
+});
+
+describe("content merge: per-field validation (a bad field does not drop the row)", () => {
+  it("keeps the valid fields of a partially invalid site row", () => {
+    const row = {
+      tagline: { en: "New en", ar: "" }, // ar empty -> invalid for `localized`
+      heroSupport: { en: "", ar: "" }, // both invalid -> field dropped
+      location: { en: "Cairo", ar: "القاهرة" }, // valid -> applied
+    };
+    const parsed = validPart(siteSchema, row) as Record<string, unknown> | undefined;
+    expect(parsed).toBeDefined();
+    expect(parsed!.tagline).toEqual({ en: "New en" });
+    expect(parsed!.heroSupport).toBeUndefined();
+    expect(parsed!.location).toEqual({ en: "Cairo", ar: "القاهرة" });
+  });
+
+  it("returns undefined for a completely unusable row", () => {
+    expect(validPart(siteSchema, "not an object")).toBeUndefined();
+    expect(validPart(siteSchema, { tagline: { en: "", ar: "" } })).toBeUndefined();
+  });
+
+  it("a row that keeps only valid fields never blanks the defaults when merged", () => {
+    const parsed = validPart(siteSchema, { tagline: { en: "New en", ar: "" } });
+    const merged = mergeDeep(
+      { tagline: { en: "Default en", ar: "Default ar" } },
+      parsed,
+    );
+    expect(merged.tagline).toEqual({ en: "New en", ar: "Default ar" });
   });
 });

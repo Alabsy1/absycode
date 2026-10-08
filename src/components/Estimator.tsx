@@ -19,17 +19,18 @@ function OptionCard({ selected, onClick, title, sub }: { selected: boolean; onCl
 
 export default function Estimator({ locale, content }: { locale: Locale; content: SiteConfig }) {
   const [step, setStep] = useState(0);
-  const [typeKey, setTypeKey] = useState(content.estimator.baseByType[0].key);
+  const [typeKey, setTypeKey] = useState(content.estimator.baseByType[0]?.key ?? "");
   const [feats, setFeats] = useState<string[]>([]);
   const [timeKey, setTimeKey] = useState("standard");
   const [name, setName] = useState("");
   const [need, setNeed] = useState("");
   const isRtl = locale === "ar";
 
-  const base = content.estimator.baseByType.find((b) => b.key === typeKey)!;
-  const time = content.estimator.timeline.find((x) => x.key === timeKey)!;
+  const base = content.estimator.baseByType.find((b) => b.key === typeKey) ?? content.estimator.baseByType[0];
+  const time = content.estimator.timeline.find((x) => x.key === timeKey) ?? content.estimator.timeline[0];
 
   const { min, max, wMin, wMax } = useMemo(() => {
+    if (!base || !time) return { min: 0, max: 0, wMin: 0, wMax: 0 };
     const sel = content.estimator.features.filter((f) => feats.includes(f.key));
     const aMin = sel.reduce((s, f) => s + f.addMin, 0);
     const aMax = sel.reduce((s, f) => s + f.addMax, 0);
@@ -40,6 +41,10 @@ export default function Estimator({ locale, content }: { locale: Locale; content
       wMax: Math.max(2, base.weeksMax + time.weeksDelta),
     };
   }, [base, feats, time, content.estimator.features]);
+
+  // Never render a broken calculator: an empty/invalid estimator config from
+  // the DB degrades to the heading instead of crashing the page.
+  if (!base || !time) return <EstimatorFallback locale={locale} />;
 
   const summary = `Hi AbsyCode! I'm ${name || "interested in a project"}. ${need ? `Project: ${need}. ` : ""}Type: ${t(base.label, locale)}. Features: ${feats.length ? feats.map((k) => t(content.estimator.features.find((f) => f.key === k)!.label, locale)).join(", ") : "none"}. Timeline: ${t(time.label, locale)}. Estimate shown: $${min}–$${max}, ${wMin}–${wMax} weeks.`;
   const waHref = `${content.contact.whatsapp}?text=${encodeURIComponent(summary)}`;
@@ -146,6 +151,22 @@ export default function Estimator({ locale, content }: { locale: Locale; content
             <p className="mt-4 font-mono text-[11px] leading-relaxed text-[#7A6A5F]">{isRtl ? "أرقام استرشادية للتقدير فقط." : "Placeholder figures — indicative only."}</p>
           </aside>
         </div>
+      </div>
+    </section>
+  );
+}
+
+/** Static heading-only rendering used when the calculator cannot run. */
+export function EstimatorFallback({ locale }: { locale: Locale }) {
+  const isRtl = locale === "ar";
+  return (
+    <section id="estimator" className="w-full scroll-mt-20 border-y border-[#D9CFC4] bg-[#ECE3DA]/50">
+      <div className="mx-auto w-full max-w-6xl px-5 py-16 sm:px-8 md:py-24 lg:px-10">
+        <p className="eyebrow">— {isRtl ? "حاسبة التكلفة" : "Estimator"}</p>
+        <h2 className="mt-2 text-3xl font-bold tracking-tight md:text-5xl">{isRtl ? "كم سيكلف مشروعك؟" : "What will your project cost?"}</h2>
+        <p className="mt-3 max-w-xl text-sm text-[#7A6A5F]">
+          {isRtl ? "أرقام استرشادية — السعر النهائي بعد مكالمة قصيرة." : "Indicative ranges — final quote after a short call."}
+        </p>
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import type { SiteConfig } from "@/config/site";
 import { t, otherLocale, type Locale } from "@/i18n";
 import Logo from "./Logo";
 import DashboardLink from "./DashboardLink";
+import ErrorBoundary from "./ErrorBoundary";
 
 function navHref(locale: Locale, href: string) {
   if (href.startsWith("#")) return href === "#contact" ? `/${locale}/contact` : `/${locale}${href}`;
@@ -54,8 +55,14 @@ export default function Header({ locale, content }: { locale: Locale; content: S
 
         <div className="flex items-center gap-2">
           <DashboardLink locale={locale} />
+          <Link
+            href="/login"
+            className="hidden text-sm text-[#7A6A5F] no-underline transition-colors hover:text-[#B5622F] sm:inline-flex"
+          >
+            {t(content.ui.login, locale)}
+          </Link>
           <button onClick={switchLocale} className="chip" aria-label="Switch language">
-            {locale === "en" ? "عربي" : "EN"}
+            {locale === "en" ? "العربية" : "EN"}
           </button>
           <Link href={`/${locale}/contact`} className="btn-primary hidden !px-4 !py-2 text-sm sm:inline-flex">
             {t(content.ui.startProject, locale)}
@@ -89,6 +96,9 @@ export default function Header({ locale, content }: { locale: Locale; content: S
                 {t(n.label, locale)}
               </Link>
             ))}
+            <Link onClick={() => setOpen(false)} href="/login" className="border-b border-[#D9CFC4]/60 py-3 text-[#382216] no-underline hover:text-[#B5622F] sm:hidden">
+              {t(content.ui.login, locale)}
+            </Link>
             <Link onClick={() => setOpen(false)} href={`/${locale}/contact`} className="btn-primary mt-3 justify-center">
               {t(content.ui.startProject, locale)}
             </Link>
